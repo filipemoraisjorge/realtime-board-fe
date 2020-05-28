@@ -1,27 +1,41 @@
-import React, {useEffect, Fragment} from 'react';
+import React, {useEffect, Fragment, useState} from 'react';
 import './App.css';
 import gql from "graphql-tag";
-import {useCreateUserMutation} from "./generated/graphql";
-import User from './components/User/User';
+import {useCreateUserMutation, useGetBoardsLazyQuery, useJoinBoardMutation} from "./generated/graphql";
+import Board from "./components/Board/Board";
 
 
 function App() {
 
-  const [createUser, {data, loading: createUserLoading, error: createUserError}] = useCreateUserMutation();
+  const [user, setUser] = useState();
+  const [board, setBoard] = useState();
+
+  const [createUser, {data: createUserData, loading: createUserLoading, error: createUserError}] = useCreateUserMutation();
+  const [getBoards, {data: getBoardsData, loading: getBoardsLoading, error: getBoardsError}] = useGetBoardsLazyQuery();
 
   useEffect(() => {
     createUser();
-  }, [createUser]);
+    getBoards();
+  }, [createUser, getBoards]);
 
   useEffect(() => {
-    createUser();
-  }, [createUser]);
+    if (createUserData) {
+      setUser(createUserData.createUser)
+    }
+  }, [createUserData]);
+
+  useEffect(() => {
+    if (getBoardsData && getBoardsData.getBoards.length > 0) {
+      setBoard(getBoardsData.getBoards[0])
+    } else {
+      // create Board
+    }
+  }, [getBoardsData]);
 
   return (
       <Fragment>
-        {createUserLoading && <div>Loading...</div>}
-        {createUserError && <div>Error: {createUserError}</div>}
-        {data && !(createUserLoading || createUserError) && <User user={data.createUser}/>}
+        {board &&
+        <Board board={board} user={user} />}
       </Fragment>
 
   );
@@ -34,6 +48,22 @@ const CREATE_USER = gql`
     createUser {
       id
       color
+    }
+  }
+`;
+
+const CREATE_BOARD = gql`
+  mutation createBoard {
+    createBoard {
+      id
+    }
+  }
+`;
+
+const GET_BOARDS = gql`
+  query getBoards {
+    getBoards {
+      id
     }
   }
 `;
