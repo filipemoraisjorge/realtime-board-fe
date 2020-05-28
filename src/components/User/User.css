@@ -1,0 +1,8 @@
+.User {
+    width: 200px;
+    height: 200px;
+}
+
+.cursor__color {
+    fill: red;
+}

@@ -1,26 +1,39 @@
-import React from 'react';
-import logo from './logo.svg';
+import React, {useEffect, Fragment} from 'react';
 import './App.css';
+import gql from "graphql-tag";
+import {useCreateUserMutation} from "./generated/graphql";
+import User from './components/User/User';
+
 
 function App() {
+
+  const [createUser, {data, loading: createUserLoading, error: createUserError}] = useCreateUserMutation();
+
+  useEffect(() => {
+    createUser();
+  }, [createUser]);
+
+  useEffect(() => {
+    createUser();
+  }, [createUser]);
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+      <Fragment>
+        {createUserLoading && <div>Loading...</div>}
+        {createUserError && <div>Error: {createUserError}</div>}
+        {data && !(createUserLoading || createUserError) && <User user={data.createUser}/>}
+      </Fragment>
+
   );
 }
 
 export default App;
+
+const CREATE_USER = gql`
+  mutation createUser {
+    createUser {
+      id
+      color
+    }
+  }
+`;
