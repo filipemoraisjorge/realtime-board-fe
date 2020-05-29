@@ -7,15 +7,16 @@ import { InMemoryCache } from 'apollo-cache-inmemory';
 import { onError } from 'apollo-link-error';
 import { ApolloLink } from 'apollo-link';
 
+console.log(window.location.hostname)
 // Create an http link:
 const httpLink = new HttpLink({
-    uri: 'http://localhost:4000',
+    uri: `http://${window.location.hostname}:4000`,
     credentials: 'same-origin'
 });
 
 // Create a WebSocket link:
 const wsLink = new WebSocketLink({
-    uri: 'ws://localhost:4000/subscriptions',
+    uri: `ws://${window.location.hostname}:4000/subscriptions`,
     options: {
         reconnect: true
     }

@@ -1,8 +1,14 @@
 import React, {useEffect, Fragment, useState} from 'react';
 import './App.css';
 import gql from "graphql-tag";
-import {useCreateUserMutation, useGetBoardsLazyQuery, useCreateBoardMutation} from "./generated/graphql";
+import {
+  useCreateUserMutation,
+  useGetBoardsLazyQuery,
+  useCreateBoardMutation,
+  useNewUserPointsSubscription
+} from "./generated/graphql";
 import Board from "./components/Board/Board";
+import {debuglog} from "util";
 
 
 function App() {
@@ -13,6 +19,15 @@ function App() {
   const [createUser, {data: createUserData, loading: createUserLoading, error: createUserError}] = useCreateUserMutation();
   const [createBoard, {data: createBoardData, loading: createBoardLoading, error: createBoardError}] = useCreateBoardMutation();
   const [getBoards, {data: getBoardsData, loading: getBoardsLoading, error: getBoardsError}] = useGetBoardsLazyQuery();
+  const {data: dataNewUserPoints} = useNewUserPointsSubscription();
+
+  useEffect(()=> {
+    if (board?.users && dataNewUserPoints?.newUserPoints) {
+      board.users = dataNewUserPoints?.newUserPoints;
+      setBoard(board)
+    }
+
+  }, [dataNewUserPoints, board, setBoard]);
 
   useEffect(() => {
     createUser();
@@ -38,7 +53,7 @@ function App() {
   return (
       <Fragment>
         {board &&
-        <Board board={board} user={user} />}
+        <Board key={board.id} board={board} user={user} />}
       </Fragment>
 
   );
@@ -59,6 +74,14 @@ const CREATE_BOARD = gql`
   mutation createBoard {
     createBoard {
       id
+      users {
+        id
+        color
+        point {
+          x
+          y
+        }
+      }
     }
   }
 `;
@@ -67,6 +90,27 @@ const GET_BOARDS = gql`
   query getBoards {
     getBoards {
       id
+      users {
+        id
+        color
+        point {
+          x
+          y
+        }
+      }
+    }
+  }
+`;
+
+const NEW_USER_POINTS = gql`
+  subscription newUserPoints {
+    newUserPoints {
+      id
+      color
+      point {
+        x
+        y
+      }
     }
   }
 `;

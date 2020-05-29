@@ -34,9 +34,11 @@ export default function BoardComponent({board, user}: { board: Board, user: User
     };
 
 
-    return <section className="Board" onMouseMove={throttle(handleMouseMove, 1000/18)}>
-        {user && <UserComponent user={user} x={x} y={y}/>}
-    </section>
+    return (
+        <section className="Board" onMouseMove={throttle(handleMouseMove, 1000/18)}>
+            {/*{user && <UserComponent user={user} x={x} y={y}/>}*/}
+            {!!board && !!board.users && board.users.map( user => user.point.x && user.point.y && <UserComponent key={user.id} user={user} x={user.point.x} y={user.point.y}/>)}
+        </section>)
 
 }
 
