@@ -1,7 +1,7 @@
 import React, {useEffect, Fragment, useState} from 'react';
 import './App.css';
 import gql from "graphql-tag";
-import {useCreateUserMutation, useGetBoardsLazyQuery, useJoinBoardMutation} from "./generated/graphql";
+import {useCreateUserMutation, useGetBoardsLazyQuery, useCreateBoardMutation} from "./generated/graphql";
 import Board from "./components/Board/Board";
 
 
@@ -11,6 +11,7 @@ function App() {
   const [board, setBoard] = useState();
 
   const [createUser, {data: createUserData, loading: createUserLoading, error: createUserError}] = useCreateUserMutation();
+  const [createBoard, {data: createBoardData, loading: createBoardLoading, error: createBoardError}] = useCreateBoardMutation();
   const [getBoards, {data: getBoardsData, loading: getBoardsLoading, error: getBoardsError}] = useGetBoardsLazyQuery();
 
   useEffect(() => {
@@ -28,9 +29,11 @@ function App() {
     if (getBoardsData && getBoardsData.getBoards.length > 0) {
       setBoard(getBoardsData.getBoards[0])
     } else {
-      // create Board
+      createBoard().then((result) => {
+        setBoard(result.data?.createBoard)
+      });
     }
-  }, [getBoardsData]);
+  }, [createBoard, getBoardsData]);
 
   return (
       <Fragment>
