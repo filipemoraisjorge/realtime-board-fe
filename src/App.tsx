@@ -21,18 +21,18 @@ function App() {
   const [getBoards, {data: getBoardsData, loading: getBoardsLoading, error: getBoardsError}] = useGetBoardsLazyQuery();
   const {data: dataNewUserPoints} = useNewUserPointsSubscription();
 
-  useEffect(()=> {
+  useEffect(function initCalls() {
+    createUser();
+    getBoards();
+  }, [createUser, getBoards]);
+
+  useEffect(function handleNewUserPointsSubscription () {
     if (board?.users && dataNewUserPoints?.newUserPoints) {
       board.users = dataNewUserPoints?.newUserPoints;
       setBoard(board)
     }
-
   }, [dataNewUserPoints, board, setBoard]);
 
-  useEffect(() => {
-    createUser();
-    getBoards();
-  }, [createUser, getBoards]);
 
   useEffect(() => {
     if (createUserData) {
@@ -40,13 +40,15 @@ function App() {
     }
   }, [createUserData]);
 
-  useEffect(() => {
-    if (getBoardsData && getBoardsData.getBoards.length > 0) {
-      setBoard(getBoardsData.getBoards[0])
-    } else {
-      createBoard().then((result) => {
-        setBoard(result.data?.createBoard)
-      });
+  useEffect(function SelectFirstBoardOrCreateNewBoard () {
+    if (getBoardsData !== undefined) {
+      if (getBoardsData.getBoards.length > 0) {
+        setBoard(getBoardsData.getBoards[0])
+      } else {
+        createBoard().then((result) => {
+          setBoard(result.data?.createBoard)
+        });
+      }
     }
   }, [createBoard, getBoardsData]);
 
@@ -102,7 +104,7 @@ const GET_BOARDS = gql`
   }
 `;
 
-const NEW_USER_POINTS = gql`
+const NEW_USER_POINTS_SUBSCRIPTION = gql`
   subscription newUserPoints {
     newUserPoints {
       id
