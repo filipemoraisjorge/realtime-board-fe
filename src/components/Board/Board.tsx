@@ -18,12 +18,18 @@ export default function BoardComponent({board, user}: { board: Board, user: User
     const [exitBoard, {data: exitBoardData}] = useExitBoardMutation();
     const [updateUserPoint, {data: updateUserPointData}] = useUpdateUserPointMutation();
 
-    useEffect(() => {
+    useEffect(function userJoinOrExitBoard() {
+        const exit = () => {
+            exitBoard({variables: {boardId: board.id, userId: user.id}});
+        };
+
         if (user && board) {
-            joinBoard({variables: {boardId: board.id, userId: user.id}})
+            joinBoard({variables: {boardId: board.id, userId: user.id}});
+            window.addEventListener('beforeunload', exit);
         }
         return () => {
-            exitBoard({variables: {boardId: board.id, userId: user.id}})
+            exit();
+            window.removeEventListener('beforeunload', exit);
         }
     }, [joinBoard, exitBoard, user, board]);
 
