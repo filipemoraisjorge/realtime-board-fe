@@ -21,17 +21,17 @@ export type Point = {
   y?: Maybe<Scalars['Float']>;
 };
 
+export type Board = {
+  __typename?: 'Board';
+  id: Scalars['ID'];
+  users: Array<User>;
+};
+
 export type User = {
   __typename?: 'User';
   id: Scalars['ID'];
   point: Point;
   color: Scalars['String'];
-};
-
-export type Board = {
-  __typename?: 'Board';
-  id: Scalars['ID'];
-  users: Array<User>;
 };
 
 export type PointInput = {
@@ -65,6 +65,7 @@ export type Mutation = {
   joinBoard?: Maybe<Scalars['Boolean']>;
   exitBoard?: Maybe<Scalars['Boolean']>;
   createUser: User;
+  updatePoint?: Maybe<User>;
 };
 
 
@@ -86,9 +87,21 @@ export type MutationExitBoardArgs = {
   boardId: Scalars['String'];
 };
 
+
+export type MutationUpdatePointArgs = {
+  point: PointInput;
+  userId: Scalars['String'];
+};
+
 export type Subscription = {
   __typename?: 'Subscription';
   newUserPoints: Array<User>;
+  newUserPoint: User;
+};
+
+
+export type SubscriptionNewUserPointArgs = {
+  userId: Scalars['ID'];
 };
 
 export type CreateUserMutationVariables = {};
@@ -99,6 +112,10 @@ export type CreateUserMutation = (
   & { createUser: (
     { __typename?: 'User' }
     & Pick<User, 'id' | 'color'>
+    & { point: (
+      { __typename?: 'Point' }
+      & Pick<Point, 'x' | 'y'>
+    ) }
   ) }
 );
 
@@ -140,21 +157,6 @@ export type GetBoardsQuery = (
   )> }
 );
 
-export type NewUserPointsSubscriptionVariables = {};
-
-
-export type NewUserPointsSubscription = (
-  { __typename?: 'Subscription' }
-  & { newUserPoints: Array<(
-    { __typename?: 'User' }
-    & Pick<User, 'id' | 'color'>
-    & { point: (
-      { __typename?: 'Point' }
-      & Pick<Point, 'x' | 'y'>
-    ) }
-  )> }
-);
-
 export type JoinBoardMutationVariables = {
   boardId: Scalars['String'];
   userId: Scalars['String'];
@@ -192,12 +194,62 @@ export type UpdateUserPointMutation = (
   )> }
 );
 
+export type UpdatePointMutationVariables = {
+  userId: Scalars['String'];
+  point: PointInput;
+};
+
+
+export type UpdatePointMutation = (
+  { __typename?: 'Mutation' }
+  & { updatePoint?: Maybe<(
+    { __typename?: 'User' }
+    & Pick<User, 'id'>
+  )> }
+);
+
+export type NewUserPointsSubscriptionVariables = {};
+
+
+export type NewUserPointsSubscription = (
+  { __typename?: 'Subscription' }
+  & { newUserPoints: Array<(
+    { __typename?: 'User' }
+    & Pick<User, 'id' | 'color'>
+    & { point: (
+      { __typename?: 'Point' }
+      & Pick<Point, 'x' | 'y'>
+    ) }
+  )> }
+);
+
+export type NewUserPointSubscriptionVariables = {
+  userId: Scalars['ID'];
+};
+
+
+export type NewUserPointSubscription = (
+  { __typename?: 'Subscription' }
+  & { newUserPoint: (
+    { __typename?: 'User' }
+    & Pick<User, 'id' | 'color'>
+    & { point: (
+      { __typename?: 'Point' }
+      & Pick<Point, 'x' | 'y'>
+    ) }
+  ) }
+);
+
 
 export const CreateUserDocument = gql`
     mutation createUser {
   createUser {
     id
     color
+    point {
+      x
+      y
+    }
   }
 }
     `;
@@ -361,58 +413,6 @@ export function useGetBoardsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHo
 export type GetBoardsQueryHookResult = ReturnType<typeof useGetBoardsQuery>;
 export type GetBoardsLazyQueryHookResult = ReturnType<typeof useGetBoardsLazyQuery>;
 export type GetBoardsQueryResult = ApolloReactCommon.QueryResult<GetBoardsQuery, GetBoardsQueryVariables>;
-export const NewUserPointsDocument = gql`
-    subscription newUserPoints {
-  newUserPoints {
-    id
-    color
-    point {
-      x
-      y
-    }
-  }
-}
-    `;
-export type NewUserPointsComponentProps = Omit<ApolloReactComponents.SubscriptionComponentOptions<NewUserPointsSubscription, NewUserPointsSubscriptionVariables>, 'subscription'>;
-
-    export const NewUserPointsComponent = (props: NewUserPointsComponentProps) => (
-      <ApolloReactComponents.Subscription<NewUserPointsSubscription, NewUserPointsSubscriptionVariables> subscription={NewUserPointsDocument} {...props} />
-    );
-    
-export type NewUserPointsProps<TChildProps = {}, TDataName extends string = 'data'> = {
-      [key in TDataName]: ApolloReactHoc.DataValue<NewUserPointsSubscription, NewUserPointsSubscriptionVariables>
-    } & TChildProps;
-export function withNewUserPoints<TProps, TChildProps = {}, TDataName extends string = 'data'>(operationOptions?: ApolloReactHoc.OperationOption<
-  TProps,
-  NewUserPointsSubscription,
-  NewUserPointsSubscriptionVariables,
-  NewUserPointsProps<TChildProps, TDataName>>) {
-    return ApolloReactHoc.withSubscription<TProps, NewUserPointsSubscription, NewUserPointsSubscriptionVariables, NewUserPointsProps<TChildProps, TDataName>>(NewUserPointsDocument, {
-      alias: 'newUserPoints',
-      ...operationOptions
-    });
-};
-
-/**
- * __useNewUserPointsSubscription__
- *
- * To run a query within a React component, call `useNewUserPointsSubscription` and pass it any options that fit your needs.
- * When your component renders, `useNewUserPointsSubscription` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the subscription, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useNewUserPointsSubscription({
- *   variables: {
- *   },
- * });
- */
-export function useNewUserPointsSubscription(baseOptions?: ApolloReactHooks.SubscriptionHookOptions<NewUserPointsSubscription, NewUserPointsSubscriptionVariables>) {
-        return ApolloReactHooks.useSubscription<NewUserPointsSubscription, NewUserPointsSubscriptionVariables>(NewUserPointsDocument, baseOptions);
-      }
-export type NewUserPointsSubscriptionHookResult = ReturnType<typeof useNewUserPointsSubscription>;
-export type NewUserPointsSubscriptionResult = ApolloReactCommon.SubscriptionResult<NewUserPointsSubscription>;
 export const JoinBoardDocument = gql`
     mutation joinBoard($boardId: String!, $userId: String!) {
   joinBoard(userId: $userId, boardId: $boardId)
@@ -566,3 +566,160 @@ export function useUpdateUserPointMutation(baseOptions?: ApolloReactHooks.Mutati
 export type UpdateUserPointMutationHookResult = ReturnType<typeof useUpdateUserPointMutation>;
 export type UpdateUserPointMutationResult = ApolloReactCommon.MutationResult<UpdateUserPointMutation>;
 export type UpdateUserPointMutationOptions = ApolloReactCommon.BaseMutationOptions<UpdateUserPointMutation, UpdateUserPointMutationVariables>;
+export const UpdatePointDocument = gql`
+    mutation updatePoint($userId: String!, $point: PointInput!) {
+  updatePoint(userId: $userId, point: $point) {
+    id
+  }
+}
+    `;
+export type UpdatePointMutationFn = ApolloReactCommon.MutationFunction<UpdatePointMutation, UpdatePointMutationVariables>;
+export type UpdatePointComponentProps = Omit<ApolloReactComponents.MutationComponentOptions<UpdatePointMutation, UpdatePointMutationVariables>, 'mutation'>;
+
+    export const UpdatePointComponent = (props: UpdatePointComponentProps) => (
+      <ApolloReactComponents.Mutation<UpdatePointMutation, UpdatePointMutationVariables> mutation={UpdatePointDocument} {...props} />
+    );
+    
+export type UpdatePointProps<TChildProps = {}, TDataName extends string = 'mutate'> = {
+      [key in TDataName]: ApolloReactCommon.MutationFunction<UpdatePointMutation, UpdatePointMutationVariables>
+    } & TChildProps;
+export function withUpdatePoint<TProps, TChildProps = {}, TDataName extends string = 'mutate'>(operationOptions?: ApolloReactHoc.OperationOption<
+  TProps,
+  UpdatePointMutation,
+  UpdatePointMutationVariables,
+  UpdatePointProps<TChildProps, TDataName>>) {
+    return ApolloReactHoc.withMutation<TProps, UpdatePointMutation, UpdatePointMutationVariables, UpdatePointProps<TChildProps, TDataName>>(UpdatePointDocument, {
+      alias: 'updatePoint',
+      ...operationOptions
+    });
+};
+
+/**
+ * __useUpdatePointMutation__
+ *
+ * To run a mutation, you first call `useUpdatePointMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUpdatePointMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [updatePointMutation, { data, loading, error }] = useUpdatePointMutation({
+ *   variables: {
+ *      userId: // value for 'userId'
+ *      point: // value for 'point'
+ *   },
+ * });
+ */
+export function useUpdatePointMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<UpdatePointMutation, UpdatePointMutationVariables>) {
+        return ApolloReactHooks.useMutation<UpdatePointMutation, UpdatePointMutationVariables>(UpdatePointDocument, baseOptions);
+      }
+export type UpdatePointMutationHookResult = ReturnType<typeof useUpdatePointMutation>;
+export type UpdatePointMutationResult = ApolloReactCommon.MutationResult<UpdatePointMutation>;
+export type UpdatePointMutationOptions = ApolloReactCommon.BaseMutationOptions<UpdatePointMutation, UpdatePointMutationVariables>;
+export const NewUserPointsDocument = gql`
+    subscription newUserPoints {
+  newUserPoints {
+    id
+    color
+    point {
+      x
+      y
+    }
+  }
+}
+    `;
+export type NewUserPointsComponentProps = Omit<ApolloReactComponents.SubscriptionComponentOptions<NewUserPointsSubscription, NewUserPointsSubscriptionVariables>, 'subscription'>;
+
+    export const NewUserPointsComponent = (props: NewUserPointsComponentProps) => (
+      <ApolloReactComponents.Subscription<NewUserPointsSubscription, NewUserPointsSubscriptionVariables> subscription={NewUserPointsDocument} {...props} />
+    );
+    
+export type NewUserPointsProps<TChildProps = {}, TDataName extends string = 'data'> = {
+      [key in TDataName]: ApolloReactHoc.DataValue<NewUserPointsSubscription, NewUserPointsSubscriptionVariables>
+    } & TChildProps;
+export function withNewUserPoints<TProps, TChildProps = {}, TDataName extends string = 'data'>(operationOptions?: ApolloReactHoc.OperationOption<
+  TProps,
+  NewUserPointsSubscription,
+  NewUserPointsSubscriptionVariables,
+  NewUserPointsProps<TChildProps, TDataName>>) {
+    return ApolloReactHoc.withSubscription<TProps, NewUserPointsSubscription, NewUserPointsSubscriptionVariables, NewUserPointsProps<TChildProps, TDataName>>(NewUserPointsDocument, {
+      alias: 'newUserPoints',
+      ...operationOptions
+    });
+};
+
+/**
+ * __useNewUserPointsSubscription__
+ *
+ * To run a query within a React component, call `useNewUserPointsSubscription` and pass it any options that fit your needs.
+ * When your component renders, `useNewUserPointsSubscription` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the subscription, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useNewUserPointsSubscription({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useNewUserPointsSubscription(baseOptions?: ApolloReactHooks.SubscriptionHookOptions<NewUserPointsSubscription, NewUserPointsSubscriptionVariables>) {
+        return ApolloReactHooks.useSubscription<NewUserPointsSubscription, NewUserPointsSubscriptionVariables>(NewUserPointsDocument, baseOptions);
+      }
+export type NewUserPointsSubscriptionHookResult = ReturnType<typeof useNewUserPointsSubscription>;
+export type NewUserPointsSubscriptionResult = ApolloReactCommon.SubscriptionResult<NewUserPointsSubscription>;
+export const NewUserPointDocument = gql`
+    subscription newUserPoint($userId: ID!) {
+  newUserPoint(userId: $userId) {
+    id
+    color
+    point {
+      x
+      y
+    }
+  }
+}
+    `;
+export type NewUserPointComponentProps = Omit<ApolloReactComponents.SubscriptionComponentOptions<NewUserPointSubscription, NewUserPointSubscriptionVariables>, 'subscription'>;
+
+    export const NewUserPointComponent = (props: NewUserPointComponentProps) => (
+      <ApolloReactComponents.Subscription<NewUserPointSubscription, NewUserPointSubscriptionVariables> subscription={NewUserPointDocument} {...props} />
+    );
+    
+export type NewUserPointProps<TChildProps = {}, TDataName extends string = 'data'> = {
+      [key in TDataName]: ApolloReactHoc.DataValue<NewUserPointSubscription, NewUserPointSubscriptionVariables>
+    } & TChildProps;
+export function withNewUserPoint<TProps, TChildProps = {}, TDataName extends string = 'data'>(operationOptions?: ApolloReactHoc.OperationOption<
+  TProps,
+  NewUserPointSubscription,
+  NewUserPointSubscriptionVariables,
+  NewUserPointProps<TChildProps, TDataName>>) {
+    return ApolloReactHoc.withSubscription<TProps, NewUserPointSubscription, NewUserPointSubscriptionVariables, NewUserPointProps<TChildProps, TDataName>>(NewUserPointDocument, {
+      alias: 'newUserPoint',
+      ...operationOptions
+    });
+};
+
+/**
+ * __useNewUserPointSubscription__
+ *
+ * To run a query within a React component, call `useNewUserPointSubscription` and pass it any options that fit your needs.
+ * When your component renders, `useNewUserPointSubscription` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the subscription, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useNewUserPointSubscription({
+ *   variables: {
+ *      userId: // value for 'userId'
+ *   },
+ * });
+ */
+export function useNewUserPointSubscription(baseOptions?: ApolloReactHooks.SubscriptionHookOptions<NewUserPointSubscription, NewUserPointSubscriptionVariables>) {
+        return ApolloReactHooks.useSubscription<NewUserPointSubscription, NewUserPointSubscriptionVariables>(NewUserPointDocument, baseOptions);
+      }
+export type NewUserPointSubscriptionHookResult = ReturnType<typeof useNewUserPointSubscription>;
+export type NewUserPointSubscriptionResult = ApolloReactCommon.SubscriptionResult<NewUserPointSubscription>;

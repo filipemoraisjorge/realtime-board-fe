@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect} from 'react';
 import './Board.css';
 
 import {UserComponent} from '../User/User';
@@ -7,16 +7,17 @@ import {
     useExitBoardMutation,
     useJoinBoardMutation,
     User,
+    useUpdatePointMutation,
     useUpdateUserPointMutation
 } from "../../generated/graphql";
 import gql from "graphql-tag";
 
 export default function BoardComponent({board, user}: { board: Board, user: User }) {
-    const [x, setX] = useState();
-    const [y, setY] = useState();
+
     const [joinBoard, {data: joinBoardData}] = useJoinBoardMutation();
     const [exitBoard, {data: exitBoardData}] = useExitBoardMutation();
     const [updateUserPoint, {data: updateUserPointData}] = useUpdateUserPointMutation();
+    const [updatePoint, {data: updatePointData}] = useUpdatePointMutation();
 
     useEffect(function userJoinOrExitBoard() {
         const exit = () => {
@@ -34,16 +35,19 @@ export default function BoardComponent({board, user}: { board: Board, user: User
     }, [joinBoard, exitBoard, user, board]);
 
     const handleMouseMove = (e: React.MouseEvent<HTMLElement, MouseEvent>) => {
-        setX(e.clientX);
-        setY(e.clientY);
-        updateUserPoint({variables: {boardId: board.id, userId: user.id, point: {x, y}}});
+        updatePoint({variables: {userId: user.id, point: {x: e.clientX, y: e.clientY}}});
     };
 
-
     return (
-        <section className="Board" onMouseMove={throttle(handleMouseMove, 1000/18)}>
-            {/*{user && <UserComponent user={user} x={x} y={y}/>}*/}
-            {!!board && !!board.users && board.users.map( user => user.point.x && user.point.y && <UserComponent key={user.id} user={user} x={user.point.x} y={user.point.y}/>)}
+        <section className="Board" onMouseMove={throttle(handleMouseMove, 1000 / 3)}>
+            {!!board && !!board.users && board.users.map( user => {
+                return <UserComponent key={user.id} user={user} />
+
+            })}
+            {!!board && !!board.users && board.users.map( user => {
+                return <span key={user.id} style={{color: user.color}}>{user.color}</span>
+
+            })}
         </section>)
 
 }
@@ -60,14 +64,26 @@ const EXIT_BOARD = gql`
     }
 `;
 
-const UPDATE_USER_POINT = gql`
-    mutation updateUserPoint($boardId: String!, $userId: String!, $point: PointInput!) {
-        updateUserPoint(userId: $userId, boardId: $boardId, point: $point) {
+const UPDATE_POINT = gql`
+    mutation updatePoint($userId: String!, $point: PointInput!) {
+        updatePoint(userId: $userId, point: $point) {
             id
         }
     }
 `;
 
+const NEW_USER_POINTS_SUBSCRIPTION = gql`
+    subscription newUserPoints {
+        newUserPoints {
+            id
+            color
+            point {
+                x
+                y
+            }
+        }
+    }
+`;
 
 // @ts-ignore
 const throttle = (func, limit: number) => {
@@ -83,3 +99,4 @@ const throttle = (func, limit: number) => {
         }
     }
 };
+

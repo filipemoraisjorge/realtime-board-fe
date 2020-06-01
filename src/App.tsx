@@ -1,14 +1,8 @@
-import React, {useEffect, Fragment, useState} from 'react';
+import React, {Fragment, useEffect, useState} from 'react';
 import './App.css';
 import gql from "graphql-tag";
-import {
-  useCreateUserMutation,
-  useGetBoardsLazyQuery,
-  useCreateBoardMutation,
-  useNewUserPointsSubscription
-} from "./generated/graphql";
+import {useCreateBoardMutation, useCreateUserMutation, useGetBoardsLazyQuery,} from "./generated/graphql";
 import Board from "./components/Board/Board";
-import {debuglog} from "util";
 
 
 function App() {
@@ -19,19 +13,11 @@ function App() {
   const [createUser, {data: createUserData, loading: createUserLoading, error: createUserError}] = useCreateUserMutation();
   const [createBoard, {data: createBoardData, loading: createBoardLoading, error: createBoardError}] = useCreateBoardMutation();
   const [getBoards, {data: getBoardsData, loading: getBoardsLoading, error: getBoardsError}] = useGetBoardsLazyQuery();
-  const {data: dataNewUserPoints} = useNewUserPointsSubscription();
 
   useEffect(function initCalls() {
     createUser();
     getBoards();
   }, [createUser, getBoards]);
-
-  useEffect(function handleNewUserPointsSubscription () {
-    if (board?.users && dataNewUserPoints?.newUserPoints) {
-      board.users = dataNewUserPoints?.newUserPoints;
-      setBoard(board)
-    }
-  }, [dataNewUserPoints, board, setBoard]);
 
 
   useEffect(() => {
@@ -40,7 +26,7 @@ function App() {
     }
   }, [createUserData]);
 
-  useEffect(function SelectFirstBoardOrCreateNewBoard () {
+  useEffect(function SelectFirstBoardOrCreateNewBoard() {
     if (getBoardsData !== undefined) {
       if (getBoardsData.getBoards.length > 0) {
         setBoard(getBoardsData.getBoards[0])
@@ -51,7 +37,6 @@ function App() {
       }
     }
   }, [createBoard, getBoardsData]);
-
   return (
       <Fragment>
         {board &&
@@ -68,6 +53,10 @@ const CREATE_USER = gql`
     createUser {
       id
       color
+      point {
+        x
+        y
+      }
     }
   }
 `;
@@ -104,15 +93,3 @@ const GET_BOARDS = gql`
   }
 `;
 
-const NEW_USER_POINTS_SUBSCRIPTION = gql`
-  subscription newUserPoints {
-    newUserPoints {
-      id
-      color
-      point {
-        x
-        y
-      }
-    }
-  }
-`;
