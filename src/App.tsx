@@ -39,8 +39,8 @@ function App() {
   }, [createBoard, getBoardsData]);
   return (
       <Fragment>
-        {board &&
-        <Board key={board.id} board={board} user={user} />}
+        {board && user &&
+        <Board key={board.id} board={board} currentUser={user}/>}
       </Fragment>
 
   );
@@ -48,17 +48,24 @@ function App() {
 
 export default App;
 
+const USER_FRAGMENT = gql`
+  fragment User on User {
+    id
+    color
+    point {
+      x
+      y
+    }
+  }
+`;
+
 const CREATE_USER = gql`
   mutation createUser {
     createUser {
-      id
-      color
-      point {
-        x
-        y
-      }
+      ...User
     }
   }
+  ${USER_FRAGMENT}
 `;
 
 const CREATE_BOARD = gql`
@@ -66,15 +73,11 @@ const CREATE_BOARD = gql`
     createBoard {
       id
       users {
-        id
-        color
-        point {
-          x
-          y
-        }
+        ...User
       }
     }
   }
+  ${USER_FRAGMENT}
 `;
 
 const GET_BOARDS = gql`
@@ -82,14 +85,10 @@ const GET_BOARDS = gql`
     getBoards {
       id
       users {
-        id
-        color
-        point {
-          x
-          y
-        }
+        ...User
       }
     }
   }
+  ${USER_FRAGMENT}
 `;
 
