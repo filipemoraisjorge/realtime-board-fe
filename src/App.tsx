@@ -3,6 +3,7 @@ import './App.css';
 import gql from "graphql-tag";
 import {useCreateBoardMutation, useCreateUserMutation, useGetBoardsLazyQuery,} from "./generated/graphql";
 import Board from "./components/Board/Board";
+import {UserFragments} from "./components/userFragments";
 
 
 function App() {
@@ -10,9 +11,9 @@ function App() {
   const [user, setUser] = useState();
   const [board, setBoard] = useState();
 
-  const [createUser, {data: createUserData, loading: createUserLoading, error: createUserError}] = useCreateUserMutation();
-  const [createBoard, {data: createBoardData, loading: createBoardLoading, error: createBoardError}] = useCreateBoardMutation();
-  const [getBoards, {data: getBoardsData, loading: getBoardsLoading, error: getBoardsError}] = useGetBoardsLazyQuery();
+  const [createUser, {data: createUserData}] = useCreateUserMutation();
+  const [createBoard] = useCreateBoardMutation();
+  const [getBoards, {data: getBoardsData}] = useGetBoardsLazyQuery();
 
   useEffect(function initCalls() {
     createUser();
@@ -40,32 +41,25 @@ function App() {
   return (
       <Fragment>
         {board && user &&
-        <Board key={board.id} board={board} currentUser={user}/>}
+        <Board
+            key={board.id}
+            board={board}
+            currentUser={user}
+        />}
       </Fragment>
-
   );
 }
 
 export default App;
 
-const USER_FRAGMENT = gql`
-  fragment User on User {
-    id
-    color
-    point {
-      x
-      y
-    }
-  }
-`;
 
 const CREATE_USER = gql`
   mutation createUser {
     createUser {
-      ...User
+      ...UserApp
     }
   }
-  ${USER_FRAGMENT}
+  ${UserFragments.app}
 `;
 
 const CREATE_BOARD = gql`
@@ -73,11 +67,11 @@ const CREATE_BOARD = gql`
     createBoard {
       id
       users {
-        ...User
+        ...UserApp
       }
     }
   }
-  ${USER_FRAGMENT}
+  ${UserFragments.app}
 `;
 
 const GET_BOARDS = gql`
@@ -85,10 +79,10 @@ const GET_BOARDS = gql`
     getBoards {
       id
       users {
-        ...User
+        ...UserApp
       }
     }
   }
-  ${USER_FRAGMENT}
+  ${UserFragments.app}
 `;
 

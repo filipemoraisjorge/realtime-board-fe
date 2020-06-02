@@ -4,4 +4,10 @@
     position: relative;
     background-color: lightskyblue;
     cursor: none;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.Board__users {
+    padding: 1rem;
 }

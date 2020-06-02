@@ -1,66 +1,122 @@
-import React, {useEffect} from 'react';
+import React, {useEffect, useState} from 'react';
 import './Board.css';
 
 import {UserComponent} from '../User/User';
 import {
     Board,
     useExitBoardMutation,
+    useGetBoardUsersLazyQuery,
     useJoinBoardMutation,
     User,
-    useUpdatePointMutation,
-    useUpdateUserPointMutation
+    UserBoardConnectE, UserBoardFragment,
+    useUpdatePointMutation
 } from "../../generated/graphql";
 import gql from "graphql-tag";
+import {UserFragments} from "../userFragments";
 
-export default function BoardComponent({board, user}: { board: Board, user: User }) {
+export default function BoardComponent({board, currentUser}: { board: Board, currentUser: User }) {
 
-    const [joinBoard, {data: joinBoardData}] = useJoinBoardMutation();
-    const [exitBoard, {data: exitBoardData}] = useExitBoardMutation();
-    const [updateUserPoint, {data: updateUserPointData}] = useUpdateUserPointMutation();
-    const [updatePoint, {data: updatePointData}] = useUpdatePointMutation();
+    const [joinBoard] = useJoinBoardMutation();
+    const [exitBoard] = useExitBoardMutation();
+    const [updatePoint] = useUpdatePointMutation();
+    const [getBoardUsersLazyQuery, {data: getBoardUsersData, subscribeToMore}] = useGetBoardUsersLazyQuery({variables: {boardId: board.id}});
+
+    const [users, setUsers] = useState(new Map<string, UserBoardFragment>(board.users.map(u => [u.id, u])));
+
+    useEffect(function subscribeToMoreBoardUsersConnecting() {
+        const subscribeToNewBoardUsers = () =>
+            subscribeToMore({
+                document: NEW_USER_BOARD_CONNECT,
+                variables: {boardId: board.id},
+                updateQuery: (prev, {subscriptionData}) => {
+                    if (!subscriptionData.data) return prev;
+                    // @ts-ignore
+                    const {user: incomingUser, connect} = subscriptionData.data.newUserBoardConnect;
+                    let newGetBoardUsers;
+                    switch (connect) {
+                        case UserBoardConnectE.Join:
+                            // @ts-ignore
+                            newGetBoardUsers = [incomingUser, ...prev.getBoardUsers];
+                            break;
+                        case UserBoardConnectE.Exit:
+                            // @ts-ignore
+                            newGetBoardUsers = prev.getBoardUsers.filter(u => u.id !== incomingUser.id);
+                            break;
+                    }
+                    return Object.assign({}, prev, {
+                        getBoardUsers: newGetBoardUsers
+                    });
+                }
+            })
+
+        if (typeof subscribeToMore === 'function') {
+            subscribeToNewBoardUsers()
+        }
+    }, [subscribeToMore]);
+
+    useEffect(function handleGetBoardUserResponse() {
+        if (!!getBoardUsersData) {
+            const {getBoardUsers} = getBoardUsersData;
+            if (getBoardUsers) {
+                const boardUsersMap = new Map<string, UserBoardFragment>(getBoardUsers.map(u => [u.id, u]));
+                setUsers(boardUsersMap)
+            }
+        }
+    }, [getBoardUsersData]);
 
     useEffect(function userJoinOrExitBoard() {
         const exit = () => {
-            exitBoard({variables: {boardId: board.id, userId: user.id}});
+            exitBoard({variables: {boardId: board.id, userId: currentUser.id}});
         };
 
-        if (user && board) {
-            joinBoard({variables: {boardId: board.id, userId: user.id}});
+        if (currentUser && board) {
+            joinBoard({variables: {boardId: board.id, userId: currentUser.id}})
+                .then(result => {
+                    if (result) {
+                        getBoardUsersLazyQuery();
+                    }
+                });
             window.addEventListener('beforeunload', exit);
         }
         return () => {
             exit();
             window.removeEventListener('beforeunload', exit);
         }
-    }, [joinBoard, exitBoard, user, board]);
+    }, [joinBoard, exitBoard, currentUser, board]);
 
     const handleMouseMove = (e: React.MouseEvent<HTMLElement, MouseEvent>) => {
-        updatePoint({variables: {userId: user.id, point: {x: e.clientX, y: e.clientY}}});
+        updatePoint({variables: {userId: currentUser.id, point: {x: e.clientX, y: e.clientY}}});
     };
 
     return (
         <section className="Board" onMouseMove={throttle(handleMouseMove, 1000 / 3)}>
-            {!!board && !!board.users && board.users.map( user => {
-                return <UserComponent key={user.id} user={user} />
+            {!!board && !!users && Array.from(users.values()).map(user => {
+                return <UserComponent key={user.id} userId={user.id}/>
 
             })}
-            {!!board && !!board.users && board.users.map( user => {
-                return <span key={user.id} style={{color: user.color}}>{user.color}</span>
-
-            })}
+            <div className="Board__users">
+                <h3>current user</h3>
+                <div style={{color: currentUser.color}}>{currentUser.id}</div>
+                <h3>board id</h3>
+                <div>{board.id}</div>
+                <h3>users</h3>
+                {!!board && !!users && Array.from(users.values()).map(user => {
+                    return <div key={`label-${user.id}`} style={{color: user.color}}>{user.id}</div>
+                })}
+            </div>
         </section>)
 
 }
 
 const JOIN_BOARD = gql`
-    mutation joinBoard($boardId: String!, $userId: String!) {
-        joinBoard(userId: $userId, boardId: $boardId)
+    mutation joinBoard($boardId: ID!, $userId: ID!) {
+        userBoardConnect(boardId: $boardId, userId: $userId, connect: JOIN)
     }
 `;
 
 const EXIT_BOARD = gql`
-    mutation exitBoard($boardId: String!, $userId: String!) {
-        exitBoard(userId: $userId, boardId: $boardId)
+    mutation exitBoard($boardId: ID!, $userId: ID!) {
+        userBoardConnect(boardId: $boardId, userId: $userId, connect: EXIT)
     }
 `;
 
@@ -72,23 +128,38 @@ const UPDATE_POINT = gql`
     }
 `;
 
-const NEW_USER_POINTS_SUBSCRIPTION = gql`
-    subscription newUserPoints {
-        newUserPoints {
-            id
-            color
-            point {
-                x
-                y
-            }
+
+const GET_BOARD_USERS = gql`
+    query getBoardUsers($boardId: ID!) {
+        getBoardUsers(boardId: $boardId) {
+            ...UserBoard
         }
     }
+    ${UserFragments.board}
+`;
+
+
+const NEW_USER_BOARD_CONNECT = gql`
+    subscription newUserBoardConnect($boardId: ID!) {
+        newUserBoardConnect(boardId: $boardId) {
+            board {
+                users {
+                    ...UserBoard
+                }
+            }
+            user {
+                ...UserBoard
+            }
+            connect
+        }
+    }
+    ${UserFragments.board}
 `;
 
 // @ts-ignore
 const throttle = (func, limit: number) => {
     let inThrottle: boolean;
-    return function() {
+    return function () {
         const args = arguments;
         // @ts-ignore
         const context: unknown = this;
