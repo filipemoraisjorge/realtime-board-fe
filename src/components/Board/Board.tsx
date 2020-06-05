@@ -8,11 +8,29 @@ import {
     useGetBoardUsersLazyQuery,
     useJoinBoardMutation,
     User,
-    UserBoardConnectE, UserBoardFragment,
+    UserBoardConnectE,
+    UserBoardFragment,
     useUpdatePointMutation
 } from "../../generated/graphql";
 import gql from "graphql-tag";
 import {UserFragments} from "../userFragments";
+
+let inThrottle: boolean;
+const throttle = (func: Function, limit: number) => {
+    return function () {
+        const args = arguments;
+        // @ts-ignore
+        const context: unknown = this;
+        if (!inThrottle) {
+            func.apply(context, args);
+            inThrottle = true;
+            setTimeout(() => {
+                inThrottle = false
+            }, limit)
+        }
+    }
+};
+
 
 export default function BoardComponent({board, currentUser}: { board: Board, currentUser: User }) {
 
@@ -33,14 +51,15 @@ export default function BoardComponent({board, currentUser}: { board: Board, cur
                     // @ts-ignore
                     const {user: incomingUser, connect} = subscriptionData.data.newUserBoardConnect;
                     let newGetBoardUsers;
+                    const {getBoardUsers} = prev;
                     switch (connect) {
                         case UserBoardConnectE.Join:
                             // @ts-ignore
-                            newGetBoardUsers = [incomingUser, ...prev.getBoardUsers];
+                            newGetBoardUsers = [incomingUser, ...getBoardUsers];
                             break;
                         case UserBoardConnectE.Exit:
                             // @ts-ignore
-                            newGetBoardUsers = prev.getBoardUsers.filter(u => u.id !== incomingUser.id);
+                            newGetBoardUsers = getBoardUsers.filter(u => u.id !== incomingUser.id);
                             break;
                     }
                     return Object.assign({}, prev, {
@@ -89,7 +108,7 @@ export default function BoardComponent({board, currentUser}: { board: Board, cur
     };
 
     return (
-        <section className="Board" onMouseMove={throttle(handleMouseMove, 1000 / 3)}>
+        <section className="Board" onMouseMove={throttle(handleMouseMove,1000/60)}>
             {!!board && !!users && Array.from(users.values()).map(user => {
                 return <UserComponent key={user.id} userId={user.id}/>
 
@@ -105,7 +124,6 @@ export default function BoardComponent({board, currentUser}: { board: Board, cur
                 })}
             </div>
         </section>)
-
 }
 
 const JOIN_BOARD = gql`
@@ -156,18 +174,5 @@ const NEW_USER_BOARD_CONNECT = gql`
     ${UserFragments.board}
 `;
 
-// @ts-ignore
-const throttle = (func, limit: number) => {
-    let inThrottle: boolean;
-    return function () {
-        const args = arguments;
-        // @ts-ignore
-        const context: unknown = this;
-        if (!inThrottle) {
-            func.apply(context, args);
-            inThrottle = true;
-            setTimeout(() => inThrottle = false, limit)
-        }
-    }
-};
+
 
